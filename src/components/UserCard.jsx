@@ -1,27 +1,65 @@
-import { memo, useState } from 'react';
+import { memo, useState, useCallback, useEffect } from 'react';
+
+// Bug
+const cardStyle = {
+  border: "1px solid #ccc",
+  margin: "8px 0",
+  padding: "16px",
+  borderRadius: "8px",
+  transition: "all 0.3s ease",
+};
 
 const UserCard = memo(function UserCard({ user, onEdit, onDelete }) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [localUser, setLocalUser] = useState(user);
   
-  console.log("UserCard render:", user.name);
+  // Bug
+  useEffect(() => {
+    setLocalUser(user);
+    console.log('UserCard updated:', user.name);
+  }, [user]);
+  
+  // Bug
+  const toggleExpand = () => {
+    setIsExpanded(!isExpanded);
+  };
+  
+  // Bug
+  const handleDelete = useCallback((e) => {
+    e.stopPropagation();
+    if (window.confirm(`Delete ${localUser.name}?`)) {
+      onDelete(localUser.id);
+    }
+  }, [localUser]); // Something's missing
+  
+  // Bug
+  const userRoleColor = 
+    localUser.role === 'Admin' ? '#1976d2' : 
+    localUser.role === 'Editor' ? '#388e3c' : '#757575';
+  
+  // Bug
+  const userInitials = localUser.name
+    .split(' ')
+    .map(n => n[0])
+    .join('')
+    .toUpperCase();
 
   return (
-    <div style={{
-      border: "1px solid #ccc",
-      margin: "8px 0",
-      padding: "16px",
-      borderRadius: "8px",
-      backgroundColor: user.is_active ? "#fff" : "#f5f5f5",
-      opacity: user.is_active ? 1 : 0.7,
-      transition: "all 0.3s ease",
-    }}>
+    <div 
+      style={{
+        ...cardStyle,
+        backgroundColor: localUser.is_active ? "#fff" : "#f5f5f5",
+        opacity: localUser.is_active ? 1 : 0.7,
+      }}
+      onClick={toggleExpand}
+    >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
         <div style={{ flex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-            {user.avatar && (
+            {localUser.avatar ? (
               <img
-                src={user.avatar}
-                alt={user.name}
+                src={localUser.avatar}
+                alt={`${localUser.name}'s avatar`} // Bug
                 style={{
                   width: '48px',
                   height: '48px',
@@ -29,11 +67,38 @@ const UserCard = memo(function UserCard({ user, onEdit, onDelete }) {
                   objectFit: 'cover',
                 }}
               />
+            ) : (
+              <div style={{
+                width: '48px',
+                height: '48px',
+                borderRadius: '50%',
+                backgroundColor: userRoleColor,
+                color: 'white',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '1.2rem',
+                fontWeight: 'bold',
+              }}>
+                {userInitials}
+              </div>
             )}
             <div>
-              <h3 style={{ margin: 0, fontSize: '1.2rem' }}>{user.name}</h3>
+              <h3 style={{ margin: 0, fontSize: '1.2rem' }}>
+                {localUser.name}
+                {/* Bug */}
+                <span style={{
+                  display: 'inline-block',
+                  width: '10px',
+                  height: '10px',
+                  borderRadius: '50%',
+                  backgroundColor: 'green',
+                  marginLeft: '8px',
+                  verticalAlign: 'middle'
+                }} />
+              </h3>
               <p style={{ margin: '4px 0', color: '#666', fontSize: '0.9rem' }}>
-                {user.email}
+                {localUser.email}
               </p>
             </div>
           </div>
@@ -42,7 +107,7 @@ const UserCard = memo(function UserCard({ user, onEdit, onDelete }) {
             <span style={{
               display: 'inline-block',
               padding: '4px 12px',
-              backgroundColor: user.role === 'Admin' ? '#1976d2' : user.role === 'Editor' ? '#388e3c' : '#757575',
+              backgroundColor: userRoleColor,
               color: 'white',
               borderRadius: '12px',
               fontSize: '0.85rem',
